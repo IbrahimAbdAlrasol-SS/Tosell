@@ -1,4 +1,6 @@
 import 'package:Tosell/Features/orders/widgets/order_card_item.dart';
+import 'package:Tosell/Features/orders/widgets/shipment_card_Item.dart';
+import 'package:Tosell/core/Client/ApiResponse.dart';
 import 'package:gap/gap.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:flutter/material.dart';
@@ -17,70 +19,63 @@ import 'package:Tosell/Features/orders/models/OrderFilter.dart';
 import 'package:Tosell/Features/orders/widgets/shipment_card_item.dart';
 import 'package:Tosell/Features/orders/providers/orders_shipments_provider.dart';
 import 'package:Tosell/Features/orders/screens/orders_filter_bottom_sheet.dart';
-import 'package:Tosell/Features/orders/screens/shipment_details_screen.dart';
 import 'package:Tosell/core/utils/GlobalToast.dart';
+// Import the enhanced widgets
+// Note: Make sure these files are created in your project
+// import 'enhanced_selectable_order_card.dart';
+// import 'enhanced_shipment_card.dart';
 
-class OrdersShipmentsScreen extends ConsumerStatefulWidget {
+class OrdersShipmentsTabBarScreen extends ConsumerStatefulWidget {
   final OrderFilter? filter;
-  const OrdersShipmentsScreen({super.key, this.filter});
+  const OrdersShipmentsTabBarScreen({super.key, this.filter});
 
   @override
-  ConsumerState<OrdersShipmentsScreen> createState() =>
-      _OrdersShipmentsScreenState();
+  ConsumerState<OrdersShipmentsTabBarScreen> createState() =>
+      _OrdersShipmentsTabBarScreenState();
 }
 
-class _OrdersShipmentsScreenState extends ConsumerState<OrdersShipmentsScreen>
+class _OrdersShipmentsTabBarScreenState extends ConsumerState<OrdersShipmentsTabBarScreen>
     with TickerProviderStateMixin {
   late TabController _tabController;
-  late OrderFilter? _currentFilter;
   bool _isLoading = false;
-
+  
+  // Cache للبيانات
   List<Order>? _cachedOrders;
   List<Shipment>? _cachedShipments;
-  bool _ordersLoaded = false;
-  bool _shipmentsLoaded = false;
+  bool _dataLoaded = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _currentFilter = widget.filter;
-
-    // تحميل البيانات عند بدء الشاشة
+    
+    // تحميل البيانات مرة واحدة عند بدء الشاشة
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadInitialData();
     });
   }
 
   Future<void> _loadInitialData() async {
-    // تحميل الطلبات والشحنات معاً مرة واحدة فقط
-    if (!_ordersLoaded || !_shipmentsLoaded) {
-      final results = await Future.wait([
-        ref.read(ordersShipmentsNotifierProvider.notifier).getOrders(
-              page: 1,
-              queryParams: _currentFilter?.toJson(),
-            ),
-        ref
-            .read(ordersShipmentsNotifierProvider.notifier)
-            .getShipments(page: 1),
-      ]);
+  if (_dataLoaded) return;
+  
+  try {
+    final results = await Future.wait([
+      ref.read(ordersShipmentsNotifierProvider.notifier).getOrders(
+        page: 1,
+        queryParams: widget.filter?.toJson(),
+      ),
+      ref.read(ordersShipmentsNotifierProvider.notifier).getShipments(page: 1),
+    ]);
 
-      _cachedOrders = (results[0].data as List<Order>?) ?? [];
-      _cachedShipments = (results[1].data as List<Shipment>?) ?? [];
-      _ordersLoaded = true;
-      _shipmentsLoaded = true;
-    }
+    setState(() {
+      _cachedOrders = (results[0] as ApiResponse<Order>).data ?? [];
+      _cachedShipments = (results[1] as ApiResponse<Shipment>).data ?? [];
+      _dataLoaded = true;
+    });
+  } catch (e) {
+    GlobalToast.show(message: 'حدث خطأ في تحميل البيانات');
   }
-
-  @override
-  void didUpdateWidget(covariant OrdersShipmentsScreen oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.filter != oldWidget.filter) {
-      _currentFilter = widget.filter ?? OrderFilter();
-      _ordersLoaded = false; // إعادة تحميل الطلبات عند تغيير الفلتر
-      _loadInitialData();
-    }
-  }
+}
 
   @override
   void dispose() {
@@ -96,17 +91,17 @@ class _OrdersShipmentsScreenState extends ConsumerState<OrdersShipmentsScreen>
         child: Column(
           children: [
             const Gap(AppSpaces.large),
-
-            // شريط البحث والفلتر أولاً
+            
+            // شريط البحث والفلتر
             _buildSearchAndFilterBar(),
-
+            
             const Gap(AppSpaces.medium),
-
-            // TabBar المحسن
+            
+            // TabBar مخصص
             _buildCustomTabBar(),
-
-            const Gap(AppSpaces.medium),
-
+            
+            const Gap(AppSpaces.small),
+            
             // محتوى التابات
             Expanded(
               child: TabBarView(
@@ -127,116 +122,119 @@ class _OrdersShipmentsScreenState extends ConsumerState<OrdersShipmentsScreen>
     final selectedOrderIds = ref.watch(multiSelectNotifierProvider);
     final isSelectionMode = ref.watch(multiSelectModeNotifierProvider);
 
-    return Row(
-      children: [
-        const Gap(5),
-        Expanded(
-          child: CustomTextFormField(
-            label: '',
-            showLabel: false,
-            hint: _tabController.index == 0 ? 'رقم الطلب' : 'رقم الوصل',
-            prefixInner: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: SvgPicture.asset(
-                'assets/svg/search.svg',
-                color: Theme.of(context).colorScheme.primary,
-                width: 3,
-                height: 3,
-              ),
-            ),
-          ),
-        ),
-        const Gap(AppSpaces.small),
-
-        if (_tabController.index == 0) ...[
-          GestureDetector(
-            onTap: () {
-              ref.read(multiSelectModeNotifierProvider.notifier).toggle();
-              if (!isSelectionMode) {
-                ref.read(multiSelectNotifierProvider.notifier).clearSelection();
-              }
-            },
-            child: Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: isSelectionMode
-                    ? Theme.of(context).colorScheme.primary
-                    : Colors.white,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: isSelectionMode
-                      ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).colorScheme.outline,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          // حقل البحث
+          Expanded(
+            child: CustomTextFormField(
+              label: '',
+              showLabel: false,
+              hint: _tabController.index == 0 ? 'رقم الطلب' : 'رقم الوصل',
+              prefixInner: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: SvgPicture.asset(
+                  'assets/svg/search.svg',
+                  color: Theme.of(context).colorScheme.primary,
+                  width: 20,
+                  height: 20,
                 ),
               ),
-              child: Icon(
-                isSelectionMode ? Icons.close : Icons.checklist,
-                color: isSelectionMode
-                    ? Colors.white
-                    : Theme.of(context).colorScheme.primary,
-                size: 24,
-              ),
             ),
           ),
+          
           const Gap(AppSpaces.small),
-        ],
 
-        // زر الفلتر
-        GestureDetector(
-          onTap: () {
-            showModalBottomSheet(
-              isScrollControlled: true,
-              context: context,
-              builder: (_) => const OrdersFilterBottomSheet(),
-            );
-          },
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Container(
+          // زر Multi-Select (فقط للطلبات)
+          if (_tabController.index == 0) ...[
+            GestureDetector(
+              onTap: () {
+                ref.read(multiSelectModeNotifierProvider.notifier).toggle();
+                if (!isSelectionMode) {
+                  ref.read(multiSelectNotifierProvider.notifier).clearSelection();
+                }
+              },
+              child: Container(
                 width: 50,
                 height: 50,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: isSelectionMode
+                      ? Theme.of(context).colorScheme.primary
+                      : Colors.white,
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: widget.filter?.status == null
-                        ? Theme.of(context).colorScheme.outline
-                        : Theme.of(context).colorScheme.primary,
+                    color: isSelectionMode
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.outline,
                   ),
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: SvgPicture.asset(
-                    'assets/svg/Funnel.svg',
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
+                child: Icon(
+                  isSelectionMode ? Icons.close : Icons.checklist,
+                  color: isSelectionMode
+                      ? Colors.white
+                      : Theme.of(context).colorScheme.primary,
+                  size: 24,
                 ),
               ),
-              if (widget.filter != null)
-                Positioned(
-                  top: 6,
-                  right: 10,
-                  child: Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
+            ),
+            const Gap(AppSpaces.small),
+          ],
+
+          // زر الفلتر
+          GestureDetector(
+            onTap: () {
+              showModalBottomSheet(
+                isScrollControlled: true,
+                context: context,
+                builder: (_) => const OrdersFilterBottomSheet(),
+              );
+            },
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: widget.filter?.status == null
+                          ? Theme.of(context).colorScheme.outline
+                          : Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: SvgPicture.asset(
+                      'assets/svg/Funnel.svg',
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                   ),
                 ),
-            ],
+                if (widget.filter != null)
+                  Positioned(
+                    top: 6,
+                    right: 10,
+                    child: Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
-        ),
-        const Gap(5),
-      ],
+        ],
+      ),
     );
   }
 
-  // TabBar محسن
   Widget _buildCustomTabBar() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -278,23 +276,23 @@ class _OrdersShipmentsScreenState extends ConsumerState<OrdersShipmentsScreen>
     );
   }
 
-  // تاب الطلبات
   Widget _buildOrdersTab() {
     final selectedOrderIds = ref.watch(multiSelectNotifierProvider);
     final isSelectionMode = ref.watch(multiSelectModeNotifierProvider);
 
     return Column(
       children: [
+        // شريط حالة الاختيار
         if (isSelectionMode) ...[
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                  color:
-                      Theme.of(context).colorScheme.primary.withOpacity(0.3)),
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.3)
+              ),
             ),
             child: Row(
               children: [
@@ -303,42 +301,71 @@ class _OrdersShipmentsScreenState extends ConsumerState<OrdersShipmentsScreen>
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.primary,
                     fontWeight: FontWeight.w600,
+                    fontFamily: "Tajawal",
                   ),
                 ),
                 const Spacer(),
-                TextButton(
-                  onPressed: () {
-                    ref
-                        .read(multiSelectNotifierProvider.notifier)
-                        .clearSelection();
+                if (selectedOrderIds.isNotEmpty)
+                  GestureDetector(
+                    onTap: () {
+                      ref.read(multiSelectNotifierProvider.notifier).selectAll(
+                        _cachedOrders?.map((order) => order.id ?? '').toList() ?? []
+                      );
+                    },
+                    child: Text(
+                      'اختيار الكل',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: "Tajawal",
+                      ),
+                    ),
+                  ),
+                const Gap(AppSpaces.medium),
+                GestureDetector(
+                  onTap: () {
+                    ref.read(multiSelectNotifierProvider.notifier).clearSelection();
                   },
                   child: Text(
                     'إلغاء الكل',
-                    style:
-                        TextStyle(color: Theme.of(context).colorScheme.error),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: "Tajawal",
+                    ),
                   ),
                 ),
               ],
             ),
           ),
-          const Gap(AppSpaces.exSmall),
+          const Gap(AppSpaces.small),
         ],
 
+        // عنوان الطلبات (يمين الشاشة)
         Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Text(
-            widget.filter == null
-                ? 'جميع الطلبات'
-                : 'جميع الطلبات "${orderStatus[widget.filter?.status ?? 0].name}"',
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Text(
+                widget.filter == null
+                    ? 'جميع الطلبات'
+                    : 'جميع الطلبات "${orderStatus[widget.filter?.status ?? 0].name}"',
+                style: const TextStyle(
+                  fontSize: 16, 
+                  fontWeight: FontWeight.w500,
+                  fontFamily: "Tajawal",
+                ),
+              ),
+            ],
           ),
         ),
 
-        // قائمة الطلبات مع Cache
+        const Gap(AppSpaces.small),
+
+        // قائمة الطلبات
         Expanded(
-          child: _cachedOrders != null
-              ? _buildCachedOrdersList()
-              : _buildPagedOrdersList(),
+          child: _buildOrdersList(isSelectionMode),
         ),
 
         // زر إرسال الطلبات المختارة
@@ -360,132 +387,210 @@ class _OrdersShipmentsScreenState extends ConsumerState<OrdersShipmentsScreen>
     );
   }
 
-  // تاب الشحنات
   Widget _buildShipmentsTab() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.end,
       children: [
+        // عنوان الشحنات (يمين الشاشة)
         const Padding(
-          padding: EdgeInsets.all(8.0),
-          child: Text(
-            'جميع الوصولات',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Text(
+                'جميع الوصولات',
+                style: TextStyle(
+                  fontSize: 16, 
+                  fontWeight: FontWeight.w500,
+                  fontFamily: "Tajawal",
+                ),
+              ),
+            ],
           ),
         ),
+        
+        const Gap(AppSpaces.small),
+        
         Expanded(
-          child: _cachedShipments != null
-              ? _buildCachedShipmentsList()
-              : _buildPagedShipmentsList(),
+          child: _buildShipmentsList(),
         ),
       ],
     );
   }
 
-  // قائمة الطلبات مع Cache
-  Widget _buildCachedOrdersList() {
-    if (_cachedOrders!.isEmpty) {
+  Widget _buildOrdersList(bool isSelectionMode) {
+    if (!_dataLoaded) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_cachedOrders == null || _cachedOrders!.isEmpty) {
       return _buildNoOrdersFound();
     }
 
-    final isSelectionMode = ref.watch(multiSelectModeNotifierProvider);
-
     return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
       itemCount: _cachedOrders!.length,
       itemBuilder: (context, index) {
-        return SelectableOrderCardItem(
+        return EnhancedSelectableOrderCard(
           order: _cachedOrders![index],
           isSelectionMode: isSelectionMode,
-          onTap: () => context.push(AppRoutes.orderDetails,
-              extra: _cachedOrders![index].code),
+          onTap: () => context.push(
+            AppRoutes.orderDetails,
+            extra: _cachedOrders![index].code,
+          ),
         );
       },
     );
   }
 
-  // قائمة الشحنات مع Cache
-  Widget _buildCachedShipmentsList() {
-    if (_cachedShipments!.isEmpty) {
+  Widget _buildShipmentsList() {
+    if (!_dataLoaded) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_cachedShipments == null || _cachedShipments!.isEmpty) {
       return _buildNoShipmentsFound();
     }
 
     return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
       itemCount: _cachedShipments!.length,
       itemBuilder: (context, index) {
-        return ShipmentCartItem(
+        return EnhancedShipmentCard(
           shipment: _cachedShipments![index],
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) =>
-                    ShipmentDetailsScreen(shipment: _cachedShipments![index]),
+          onTap: () => _showShipmentOrders(_cachedShipments![index]),
+        );
+      },
+    );
+  }
+
+  void _showShipmentOrders(Shipment shipment) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.8,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
+          ),
+        ),
+        child: Column(
+          children: [
+            // Handle indicator
+            Container(
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              width: 50,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
               ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  // قائمة الطلبات العادية (عند عدم وجود Cache)
-  Widget _buildPagedOrdersList() {
-    return GenericPagedListView<Order>(
-      key: ValueKey(widget.filter?.toJson()),
-      noItemsFoundIndicatorBuilder: _buildNoOrdersFound(),
-      fetchPage: (pageKey, _) async {
-        final result =
-            await ref.read(ordersShipmentsNotifierProvider.notifier).getOrders(
-                  page: pageKey,
-                  queryParams: _currentFilter?.toJson(),
-                );
-        if (pageKey == 1) {
-          _cachedOrders = result.data ?? [];
-          _ordersLoaded = true;
-        }
-        return result;
-      },
-      itemBuilder: (context, order, index) {
-        final isSelectionMode = ref.watch(multiSelectModeNotifierProvider);
-        return SelectableOrderCardItem(
-          order: order,
-          isSelectionMode: isSelectionMode,
-          onTap: () => context.push(AppRoutes.orderDetails, extra: order.code),
-        );
-      },
-    );
-  }
-
-  // قائمة الشحنات العادية (عند عدم وجود Cache)
-  Widget _buildPagedShipmentsList() {
-    return GenericPagedListView<Shipment>(
-      noItemsFoundIndicatorBuilder: _buildNoShipmentsFound(),
-      fetchPage: (pageKey, _) async {
-        final result = await ref
-            .read(ordersShipmentsNotifierProvider.notifier)
-            .getShipments(
-              page: pageKey,
-            );
-        if (pageKey == 1) {
-          _cachedShipments = result.data ?? [];
-          _shipmentsLoaded = true;
-        }
-        return result;
-      },
-      itemBuilder: (context, shipment, index) => ShipmentCartItem(
-        shipment: shipment,
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ShipmentDetailsScreen(shipment: shipment),
             ),
-          );
-        },
+            
+            // Header
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Icon(
+                      Icons.close,
+                      color: Theme.of(context).colorScheme.secondary,
+                    ),
+                  ),
+                  const Gap(AppSpaces.medium),
+                  Expanded(
+                    child: Text(
+                      'طلبات الشحنة ${shipment.code ?? ""}',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        fontFamily: "Tajawal",
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            const Divider(height: 1),
+            
+            // Orders list
+            Expanded(
+              child: FutureBuilder<List<Order>>(
+                future: _getShipmentOrders(shipment.id ?? ''),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  
+                  if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SvgPicture.asset(
+                            'assets/svg/box.svg',
+                            width: 64,
+                            height: 64,
+                            color: Theme.of(context).colorScheme.secondary,
+                          ),
+                          const Gap(AppSpaces.medium),
+                          const Text(
+                            'لا توجد طلبات في هذه الشحنة',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontFamily: "Tajawal",
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  
+                  return ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: snapshot.data!.length,
+                    itemBuilder: (context, index) {
+                      return EnhancedSelectableOrderCard(
+                        order: snapshot.data![index],
+                        isSelectionMode: false,
+                        onTap: () {
+                          Navigator.pop(context);
+                          context.push(
+                            AppRoutes.orderDetails,
+                            extra: snapshot.data![index].code,
+                          );
+                        },
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  // إرسال الطلبات المختارة
+  Future<List<Order>> _getShipmentOrders(String shipmentId) async {
+    try {
+      final result = await ref.read(ordersShipmentsNotifierProvider.notifier).getOrders(
+        page: 1,
+        queryParams: OrderFilter(shipmentId: shipmentId).toJson(),
+      );
+      return result.data ?? [];
+    } catch (e) {
+      return [];
+    }
+  }
+
   Future<void> _sendSelectedOrders() async {
     final selectedOrderIds = ref.read(multiSelectNotifierProvider);
 
@@ -498,85 +603,103 @@ class _OrdersShipmentsScreenState extends ConsumerState<OrdersShipmentsScreen>
       _isLoading = true;
     });
 
-    final result = await ref
-        .read(ordersShipmentsNotifierProvider.notifier)
-        .createShipment(selectedOrderIds);
+    try {
+      final result = await ref
+          .read(ordersShipmentsNotifierProvider.notifier)
+          .createShipment(selectedOrderIds);
 
-    setState(() {
-      _isLoading = false;
-    });
+      if (result.$1 != null) {
+        GlobalToast.showSuccess(message: 'تم إرسال الطلبات بنجاح');
+        ref.read(multiSelectNotifierProvider.notifier).clearSelection();
+        ref.read(multiSelectModeNotifierProvider.notifier).disable();
 
-    if (result.$1 != null) {
-      GlobalToast.showSuccess(message: 'تم إرسال الطلبات بنجاح');
-      ref.read(multiSelectNotifierProvider.notifier).clearSelection();
-      ref.read(multiSelectModeNotifierProvider.notifier).disable();
-
-      // تحديث البيانات
-      _ordersLoaded = false;
-      _shipmentsLoaded = false;
-      _loadInitialData();
-    } else {
+        // تحديث البيانات
+        _dataLoaded = false;
+        _loadInitialData();
+      } else {
+        GlobalToast.show(
+          message: result.$2 ?? 'فشل في إرسال الطلبات',
+          backgroundColor: Colors.red,
+        );
+      }
+    } catch (e) {
       GlobalToast.show(
-        message: result.$2 ?? 'فشل في إرسال الطلبات',
+        message: 'حدث خطأ أثناء الإرسال',
         backgroundColor: Colors.red,
       );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
   Widget _buildNoOrdersFound() {
-    return Column(
-      children: [
-        Image.asset('assets/svg/NoItemsFound.gif', width: 240, height: 240),
-        Text(
-          'لا توجد طلبات مضافة',
-          style: context.textTheme.bodyLarge!.copyWith(
-            fontWeight: FontWeight.w700,
-            color: const Color(0xffE96363),
-            fontSize: 24,
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Image.asset('assets/svg/NoItemsFound.gif', width: 240, height: 240),
+          const Gap(AppSpaces.medium),
+          Text(
+            'لا توجد طلبات مضافة',
+            style: context.textTheme.bodyLarge!.copyWith(
+              fontWeight: FontWeight.w500,
+              color: const Color(0xffE96363),
+              fontSize: 24,
+              fontFamily: "Tajawal",
+            ),
           ),
-        ),
-        const SizedBox(height: 7),
-        Text(
-          'اضغط على زر "جديد" لإضافة طلب جديد و ارساله الى زبونك',
-          style: context.textTheme.bodySmall!.copyWith(
-            fontWeight: FontWeight.w500,
-            color: const Color(0xff698596),
-            fontSize: 16,
+          const Gap(AppSpaces.small),
+          Text(
+            'اضغط على زر "جديد" لإضافة طلب جديد و ارساله الى زبونك',
+            textAlign: TextAlign.center,
+            style: context.textTheme.bodySmall!.copyWith(
+              fontWeight: FontWeight.w400,
+              color: const Color(0xff698596),
+              fontSize: 16,
+              fontFamily: "Tajawal",
+            ),
           ),
-        ),
-        const SizedBox(height: 20),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10.0),
-          child: FillButton(
-            label: 'إضافة اول طلب',
-            onPressed: () => context.push(AppRoutes.addOrder),
-            icon: SvgPicture.asset('assets/svg/navigation_add.svg',
-                color: const Color(0xffFAFEFD)),
-            reverse: true,
-          ),
-        )
-      ],
+          const Gap(AppSpaces.large),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: FillButton(
+              label: 'إضافة أول طلب',
+              onPressed: () => context.push(AppRoutes.addOrder),
+              icon: SvgPicture.asset(
+                'assets/svg/navigation_add.svg',
+                color: Colors.white,
+              ),
+            ),
+          )
+        ],
+      ),
     );
   }
 
   Widget _buildNoShipmentsFound() {
-    return Column(
-      children: [
-        Image.asset(
-          'assets/svg/NoItemsFound.gif',
-          width: 240,
-          height: 240,
-        ),
-        const Gap(AppSpaces.medium),
-        Text(
-          'لا توجد وصولات',
-          style: context.textTheme.bodyLarge!.copyWith(
-            fontWeight: FontWeight.w700,
-            color: context.colorScheme.primary,
-            fontSize: 24,
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Image.asset(
+            'assets/svg/NoItemsFound.gif',
+            width: 240,
+            height: 240,
           ),
-        ),
-      ],
+          const Gap(AppSpaces.medium),
+          Text(
+            'لا توجد وصولات',
+            style: context.textTheme.bodyLarge!.copyWith(
+              fontWeight: FontWeight.w500,
+              color: context.colorScheme.primary,
+              fontSize: 24,
+              fontFamily: "Tajawal",
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

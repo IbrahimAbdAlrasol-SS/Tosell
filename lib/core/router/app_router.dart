@@ -189,7 +189,7 @@ final GoRouter appRouter = GoRouter(
           path: AppRoutes.orders,
           pageBuilder: (context, state) => CustomTransitionPage(
             key: state.pageKey,
-            child:  BackgroundWrapper(child: OrdersShipmentsScreen(
+            child:  BackgroundWrapper(child: OrdersShipmentsTabBarScreen(
               filter: state.extra as OrderFilter?,
             )),
             transitionsBuilder: _slideFromLeftTransition,

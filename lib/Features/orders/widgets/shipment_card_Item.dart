@@ -6,11 +6,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:Tosell/Features/orders/models/Shipment.dart';
 import 'package:Tosell/Features/orders/models/order_enum.dart';
 
-class ShipmentCartItem extends ConsumerWidget {
+class EnhancedShipmentCard extends ConsumerWidget {
   final Shipment shipment;
   final Function? onTap;
 
-  const ShipmentCartItem({
+  const EnhancedShipmentCard({
     required this.shipment,
     this.onTap,
     super.key,
@@ -25,10 +25,9 @@ class ShipmentCartItem extends ConsumerWidget {
     return GestureDetector(
       onTap: () => onTap?.call(),
       child: Padding(
-        padding: const EdgeInsets.all(8.0),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         child: Container(
-          margin: const EdgeInsets.only(bottom: 5),
-          padding: const EdgeInsets.only(right: 2, left: 2, bottom: 2),
+          padding: const EdgeInsets.all(2),
           decoration: BoxDecoration(
             border: Border.all(color: theme.colorScheme.outline),
             color: const Color(0xffEAEEF0),
@@ -37,94 +36,90 @@ class ShipmentCartItem extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Header section
               Padding(
-                padding: const EdgeInsets.only(bottom: 10.0, top: 10.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                child: Row(
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(1000),
-                            color: theme.colorScheme.surface,
-                          ),
-                          child: SvgPicture.asset(
-                            "assets/svg/box.svg",
-                            width: 24,
-                            height: 24,
-                            color: theme.colorScheme.primary,
-                          ),
-                        ),
-                        const SizedBox(width: 7),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                shipment.code ?? "لايوجد",
-                                textAlign: TextAlign.right,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: theme.colorScheme.onSurface,
-                                  fontWeight: FontWeight.bold,
-                                  fontFamily: "Tajawal",
-                                ),
-                              ),
-                              Text(
-                                "${date.day}.${date.month}.${date.year}",
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: theme.colorScheme.secondary,
-                                  fontWeight: FontWeight.w400,
-                                  fontFamily: "Tajawal",
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        _buildShipmentStatus(shipment.status ?? 0),
-                        const Gap(AppSpaces.small),
-                      ],
+                    // Shipment icon
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: theme.colorScheme.surface,
+                      ),
+                      child: SvgPicture.asset(
+                        "assets/svg/box.svg",
+                        width: 20,
+                        height: 20,
+                        color: theme.colorScheme.primary,
+                      ),
                     ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Column(
-                  children: [
-                    IntrinsicHeight(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    
+                    const Gap(AppSpaces.medium),
+                    
+                    // Shipment info
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          buildShipmentSection(
-                            "وصولات/${shipment.ordersCount}",
-                            "assets/svg/48. Files.svg", 
-                            theme,
-                            textColor: Colors.black
+                          Text(
+                            shipment.code ?? "لايوجد",
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: theme.colorScheme.onSurface,
+                              fontWeight: FontWeight.w600,
+                              fontFamily: "Tajawal",
+                            ),
                           ),
-                          VerticalDivider(
-                            width: 1,
-                            thickness: 1,
-                            color: theme.colorScheme.outline,
-                          ),
-                          const Gap(AppSpaces.small),
-                          buildShipmentSection(
-                            "التجار/${shipment.merchantsCount}",
-                            "assets/svg/User.svg",
-                            theme,
-                            textColor: Colors.black
+                          const Gap(AppSpaces.exSmall),
+                          Text(
+                            "${date.day}/${date.month}/${date.year}",
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: theme.colorScheme.secondary,
+                              fontWeight: FontWeight.w400,
+                              fontFamily: "Tajawal",
+                            ),
                           ),
                         ],
                       ),
                     ),
+                    
+                    // Shipment status
+                    _buildShipmentStatus(shipment.status ?? 0, theme),
                   ],
+                ),
+              ),
+              
+              // Details section
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 2),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: IntrinsicHeight(
+                  child: Row(
+                    children: [
+                      _buildShipmentInfoSection(
+                        "وصولات/${shipment.ordersCount ?? 0}",
+                        "assets/svg/Files.svg", // تغيير المسار لتجنب الخطأ
+                        theme,
+                      ),
+                      VerticalDivider(
+                        width: 20,
+                        thickness: 1,
+                        color: theme.colorScheme.outline,
+                      ),
+                      _buildShipmentInfoSection(
+                        "التجار/${shipment.merchantsCount ?? 0}",
+                        "assets/svg/User.svg",
+                        theme,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -134,73 +129,53 @@ class ShipmentCartItem extends ConsumerWidget {
     );
   }
 
-  Widget _buildShipmentStatus(int index) {
+  Widget _buildShipmentStatus(int index, ThemeData theme) {
     return Container(
-      width: 100,
-      height: 26,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: orderStatus[index].color,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
       ),
-      child: Center(
-        child: Text(
-          orderStatus[index].name!,
+      child: Text(
+        orderStatus[index].name!,
+        style: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w500,
+          fontFamily: "Tajawal",
         ),
       ),
     );
   }
-}
 
-Widget buildShipmentSection(
-  String title,
-  String iconPath,
-  ThemeData theme, {
-  bool isRed = false,
-  bool isGray = false,
-  void Function()? onTap,
-  EdgeInsets? padding,
-  double? textWidth,
-  Color? textColor,
-}) {
-  return Expanded(
-    child: GestureDetector(
-      onTap: onTap,
+  Widget _buildShipmentInfoSection(String title, String iconPath, ThemeData theme) {
+    return Expanded(
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        padding: const EdgeInsets.symmetric(vertical: 6),
         child: Row(
           children: [
-            Padding(
-              padding: padding ?? const EdgeInsets.all(0),
-              child: SvgPicture.asset(
-                iconPath,
-                width: 24,
-                height: 24,
-                color: isRed
-                    ? theme.colorScheme.error
-                    : isGray
-                        ? theme.colorScheme.secondary
-                        : theme.colorScheme.primary,
-              ),
+            SvgPicture.asset(
+              iconPath,
+              width: 18,
+              height: 18,
+              color: theme.colorScheme.primary,
             ),
-            const SizedBox(width: 10),
+            const Gap(AppSpaces.small),
             Expanded(
-              child: SizedBox(
-                width: textWidth,
-                child: Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w400,
-                    color: textColor ?? theme.colorScheme.secondary,
-                    fontFamily: "Tajawal",
-                    overflow: TextOverflow.ellipsis,
-                  ),
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                  color: Colors.black, // النص أسود كما هو مطلوب
+                  fontFamily: "Tajawal",
                 ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
               ),
             ),
           ],
         ),
       ),
-    ),
-  );
+    );
+  }
 }
