@@ -78,13 +78,10 @@ class _ShipmentDetailsScreenState extends ConsumerState<ShipmentDetailsScreen>
                     // بطاقة معلومات الشحنة
                     _buildShipmentInfoCard(theme, date),
                     
-                    const Gap(AppSpaces.large),
+                    const Gap(AppSpaces.medium),
                     
                     // إحصائيات الشحنة
-                    _buildShipmentStats(theme),
-                    
-                    const Gap(AppSpaces.large),
-                    
+                          
                     // قائمة الطلبات في الشحنة
                     _buildOrdersSection(),
                   ],
@@ -158,55 +155,7 @@ class _ShipmentDetailsScreenState extends ConsumerState<ShipmentDetailsScreen>
     );
   }
 
-  Widget _buildShipmentStats(ThemeData theme) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: theme.colorScheme.outline),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'إحصائيات الشحنة',
-            style: TextStyle(
-              fontSize: 18,
-              color: theme.colorScheme.onSurface,
-              fontWeight: FontWeight.bold,
-              fontFamily: "Tajawal",
-            ),
-          ),
-          const Gap(AppSpaces.medium),
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatCard(
-                  'عدد الطلبات',
-                  '${widget.shipment.ordersCount ?? 0}',
-                  'assets/svg/48. Files.svg',
-                  theme.colorScheme.primary,
-                  theme,
-                ),
-              ),
-              const Gap(AppSpaces.medium),
-              Expanded(
-                child: _buildStatCard(
-                  'عدد التجار',
-                  '${widget.shipment.merchantsCount ?? 0}',
-                  'assets/svg/User.svg',
-                  theme.colorScheme.secondary,
-                  theme,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
+  
   Widget _buildStatCard(String title, String value, String iconPath, Color color, ThemeData theme) {
     return Container(
       padding: const EdgeInsets.all(16),
