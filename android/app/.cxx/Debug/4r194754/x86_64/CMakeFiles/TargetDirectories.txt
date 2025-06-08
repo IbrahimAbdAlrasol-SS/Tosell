@@ -1,0 +1,2 @@
+C:/Tosell_riverpod-main/android/app/.cxx/Debug/4r194754/x86_64/CMakeFiles/edit_cache.dir
+C:/Tosell_riverpod-main/android/app/.cxx/Debug/4r194754/x86_64/CMakeFiles/rebuild_cache.dir

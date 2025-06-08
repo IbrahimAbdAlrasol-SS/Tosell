@@ -9,7 +9,7 @@ import 'package:Tosell/Features/orders/models/OrderFilter.dart';
 import 'package:Tosell/Features/profile/models/transaction.dart';
 import 'package:Tosell/Features/order/screens/order_screen.dart';
 import 'package:Tosell/Features/profile/screens/zones_screen.dart';
-import 'package:Tosell/Features/orders/screens/orders_screen.dart';
+import 'package:Tosell/Features/orders/screens/shipments_orders_screen.dart';
 import 'package:Tosell/Features/profile/screens/logout_Screen.dart';
 import 'package:Tosell/Features/order/screens/order_completed.dart';
 import 'package:Tosell/Features/order/screens/add_order_screen.dart';
@@ -189,7 +189,7 @@ final GoRouter appRouter = GoRouter(
           path: AppRoutes.orders,
           pageBuilder: (context, state) => CustomTransitionPage(
             key: state.pageKey,
-            child:  BackgroundWrapper(child: OrdersScreen(
+            child:  BackgroundWrapper(child: OrdersShipmentsScreen(
               filter: state.extra as OrderFilter?,
             )),
             transitionsBuilder: _slideFromLeftTransition,
