@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:Tosell/Features/orders/models/Order.dart';
 import 'package:Tosell/Features/order/models/Location.dart';
+import 'package:Tosell/Features/orders/services/orders_shipments_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:Tosell/Features/order/models/add_order_form.dart';
 import 'package:Tosell/Features/orders/services/orders_service.dart';
@@ -9,7 +10,7 @@ part 'order_commands_provider.g.dart';
 
 @riverpod
 class OrderCommandsNotifier extends _$OrderCommandsNotifier {
-  final OrdersService _service = OrdersService();
+  final OrdersShipmentsService _service = OrdersShipmentsService();
 
   Future<(Order?, String?)> changeOrderState({required String code}) async {
     return (await _service.changeOrderState(code: code));

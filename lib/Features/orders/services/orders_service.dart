@@ -21,15 +21,7 @@ class OrdersService {
     }
   }
 
-  Future<(Order?, String?)> changeOrderState({String? code}) async {
-    try {
-      var result =
-          await baseClient.update(endpoint: '/order/$code/advance-step');
-      return (result.singleData, result.message);
-    } catch (e) {
-      rethrow;
-    }
-  }
+  
 
   Future<Order?>? getOrderByCode({required String code}) async {
     try {
