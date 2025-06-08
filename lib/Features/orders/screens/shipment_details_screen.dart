@@ -36,7 +36,6 @@ class _ShipmentDetailsScreenState extends ConsumerState<ShipmentDetailsScreen>
   }
 
   Future<void> _loadShipmentOrders() async {
-    // تحميل الطلبات المرتبطة بالشحنة
     final result = await ref.read(ordersShipmentsNotifierProvider.notifier).getOrders(
       page: 1,
       queryParams: OrderFilter(
@@ -61,7 +60,6 @@ class _ShipmentDetailsScreenState extends ConsumerState<ShipmentDetailsScreen>
       body: SafeArea(
         child: Column(
           children: [
-            // AppBar مخصص
             CustomAppBar(
               title: 'تفاصيل الشحنة',
               showBackButton: true,
@@ -74,7 +72,6 @@ class _ShipmentDetailsScreenState extends ConsumerState<ShipmentDetailsScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // بطاقة معلومات الشحنة
                     _buildShipmentInfoCard(theme, date),
                     
                     const Gap(AppSpaces.medium),
@@ -153,8 +150,6 @@ class _ShipmentDetailsScreenState extends ConsumerState<ShipmentDetailsScreen>
       ),
     );
   }
-
-  
   Widget _buildStatCard(String title, String value, String iconPath, Color color, ThemeData theme) {
     return Container(
       padding: const EdgeInsets.all(16),

@@ -32,7 +32,6 @@ class _OrdersShipmentsTabBarScreenState extends ConsumerState<OrdersShipmentsTab
   late TabController _tabController;
   bool _isLoading = false;
   
-  // Cache للبيانات
   List<Order>? _cachedOrders;
   List<Shipment>? _cachedShipments;
   bool _dataLoaded = false;
@@ -42,38 +41,51 @@ class _OrdersShipmentsTabBarScreenState extends ConsumerState<OrdersShipmentsTab
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     
-    // تحميل البيانات مرة واحدة عند بدء الشاشة
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadInitialData();
     });
   }
 
   Future<void> _loadInitialData() async {
-  if (_dataLoaded) return;
-  
-  try {
-    // تحميل الطلبات
-    final ordersResult = await ref.read(ordersShipmentsNotifierProvider.notifier).getOrders(
-      page: 1,
-      queryParams: widget.filter?.toJson(),
-    );
+    if (_dataLoaded) return;
     
-    // تحميل الشحنات  
-    final shipmentsResult = await ref.read(ordersShipmentsNotifierProvider.notifier).getShipments(page: 1);
+    setState(() {
+      _dataLoaded = false;
+    });
+    
+    try {
+      final ordersResult = await ref.read(ordersShipmentsNotifierProvider.notifier).getOrders(
+        page: 1,
+        queryParams: widget.filter?.toJson(),
+        forceRefresh: true,
+      );
+      
+      final shipmentsResult = await ref.read(ordersShipmentsNotifierProvider.notifier).getShipments(
+        page: 1,
+        forceRefresh: true,
+      );
 
-    if (mounted) {
-      setState(() {
-        _cachedOrders = ordersResult.data ?? [];
-        _cachedShipments = shipmentsResult.data ?? [];
-        _dataLoaded = true;
-      });
-    }
-  } catch (e) {
-    if (mounted) {
-      GlobalToast.show(message: 'حدث خطأ في تحميل البيانات');
+      if (mounted) {
+        setState(() {
+          _cachedOrders = ordersResult.data ?? [];
+          _cachedShipments = shipmentsResult.data ?? [];
+          _dataLoaded = true;
+        });
+        
+
+        ref.read(ordersShipmentsNotifierProvider.notifier).updateCachedOrders(_cachedOrders ?? []);
+        ref.read(ordersShipmentsNotifierProvider.notifier).updateCachedShipments(_cachedShipments ?? []);
+      }
+    } catch (e) {
+      if (mounted) {
+        GlobalToast.show(message: 'حدث خطأ في تحميل البيانات');
+        setState(() {
+          _dataLoaded = true;
+        });
+      }
     }
   }
-}
+
 
   @override
   void dispose() {
@@ -90,17 +102,14 @@ class _OrdersShipmentsTabBarScreenState extends ConsumerState<OrdersShipmentsTab
           children: [
             const Gap(AppSpaces.large),
             
-            // شريط البحث والفلتر
             _buildSearchAndFilterBar(),
             
-            const Gap(AppSpaces.medium),
+            const Gap(AppSpaces.small),
             
-            // TabBar مخصص
             _buildCustomTabBar(),
             
             const Gap(AppSpaces.small),
             
-            // محتوى التابات
             Expanded(
               child: TabBarView(
                 controller: _tabController,
@@ -124,7 +133,7 @@ class _OrdersShipmentsTabBarScreenState extends ConsumerState<OrdersShipmentsTab
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
-          // حقل البحث
+     
           Expanded(
             child: CustomTextFormField(
               label: '',
@@ -144,7 +153,6 @@ class _OrdersShipmentsTabBarScreenState extends ConsumerState<OrdersShipmentsTab
           
           const Gap(AppSpaces.small),
 
-          // زر Multi-Select (فقط للطلبات)
           if (_tabController.index == 0) ...[
             GestureDetector(
               onTap: () {
@@ -179,7 +187,7 @@ class _OrdersShipmentsTabBarScreenState extends ConsumerState<OrdersShipmentsTab
             const Gap(AppSpaces.small),
           ],
 
-          // زر الفلتر
+  
           GestureDetector(
             onTap: () {
               showModalBottomSheet(
@@ -245,7 +253,8 @@ class _OrdersShipmentsTabBarScreenState extends ConsumerState<OrdersShipmentsTab
       child: TabBar(
         controller: _tabController,
         onTap: (index) {
-          setState(() {});
+          setState(() {
+          });
         },
         indicator: BoxDecoration(
           color: Theme.of(context).colorScheme.primary,
@@ -273,14 +282,11 @@ class _OrdersShipmentsTabBarScreenState extends ConsumerState<OrdersShipmentsTab
       ),
     );
   }
-
   Widget _buildOrdersTab() {
     final selectedOrderIds = ref.watch(multiSelectNotifierProvider);
     final isSelectionMode = ref.watch(multiSelectModeNotifierProvider);
-
     return Column(
       children: [
-        // شريط حالة الاختيار
         if (isSelectionMode) ...[
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -338,12 +344,10 @@ class _OrdersShipmentsTabBarScreenState extends ConsumerState<OrdersShipmentsTab
           ),
           const Gap(AppSpaces.small),
         ],
-
-        // عنوان الطلبات (يمين الشاشة)
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
               Text(
                 widget.filter == null
@@ -358,15 +362,10 @@ class _OrdersShipmentsTabBarScreenState extends ConsumerState<OrdersShipmentsTab
             ],
           ),
         ),
-
         const Gap(AppSpaces.small),
-
-        // قائمة الطلبات
         Expanded(
           child: _buildOrdersList(isSelectionMode),
         ),
-
-        // زر إرسال الطلبات المختارة
         if (isSelectionMode && selectedOrderIds.isNotEmpty)
           Container(
             padding: const EdgeInsets.all(16),
@@ -384,16 +383,14 @@ class _OrdersShipmentsTabBarScreenState extends ConsumerState<OrdersShipmentsTab
       ],
     );
   }
-
   Widget _buildShipmentsTab() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // عنوان الشحنات (يمين الشاشة)
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 16),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
               Text(
                 'جميع الوصولات',
@@ -406,25 +403,20 @@ class _OrdersShipmentsTabBarScreenState extends ConsumerState<OrdersShipmentsTab
             ],
           ),
         ),
-        
         const Gap(AppSpaces.small),
-        
         Expanded(
           child: _buildShipmentsList(),
         ),
       ],
     );
   }
-
   Widget _buildOrdersList(bool isSelectionMode) {
     if (!_dataLoaded) {
       return const Center(child: CircularProgressIndicator());
     }
-
     if (_cachedOrders == null || _cachedOrders!.isEmpty) {
       return _buildNoOrdersFound();
     }
-
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 8),
       itemCount: _cachedOrders!.length,
@@ -440,7 +432,6 @@ class _OrdersShipmentsTabBarScreenState extends ConsumerState<OrdersShipmentsTab
       },
     );
   }
-
   Widget _buildShipmentsList() {
     if (!_dataLoaded) {
       return const Center(child: CircularProgressIndicator());
@@ -463,132 +454,26 @@ class _OrdersShipmentsTabBarScreenState extends ConsumerState<OrdersShipmentsTab
   }
 
   void _showShipmentOrders(Shipment shipment) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.8,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(24),
-            topRight: Radius.circular(24),
-          ),
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => _ShipmentOrdersModal(
+          shipment: shipment,
+          ref: ref,
         ),
-        child: Column(
-          children: [
-            // Handle indicator
-            Container(
-              margin: const EdgeInsets.symmetric(vertical: 12),
-              width: 50,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            
-            // Header
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Icon(
-                      Icons.close,
-                      color: Theme.of(context).colorScheme.secondary,
-                    ),
-                  ),
-                  const Gap(AppSpaces.medium),
-                  Expanded(
-                    child: Text(
-                      'طلبات الشحنة ${shipment.code ?? ""}',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        fontFamily: "Tajawal",
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            
-            const Divider(height: 1),
-            
-            // Orders list
-            Expanded(
-              child: FutureBuilder<List<Order>>(
-                future: _getShipmentOrders(shipment.id ?? ''),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  
-                  if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SvgPicture.asset(
-                            'assets/svg/box.svg',
-                            width: 64,
-                            height: 64,
-                            color: Theme.of(context).colorScheme.secondary,
-                          ),
-                          const Gap(AppSpaces.medium),
-                          const Text(
-                            'لا توجد طلبات في هذه الشحنة',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontFamily: "Tajawal",
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-                  
-                  return ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: snapshot.data!.length,
-                    itemBuilder: (context, index) {
-                      return EnhancedSelectableOrderCard(
-                        order: snapshot.data![index],
-                        isSelectionMode: false,
-                        onTap: () {
-                          Navigator.pop(context);
-                          context.push(
-                            AppRoutes.orderDetails,
-                            extra: snapshot.data![index].code,
-                          );
-                        },
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0.0, 1.0),
+              end: Offset.zero,
+            ).animate(animation),
+            child: child,
+          );
+        },
+        opaque: false,
+        barrierDismissible: true,
       ),
     );
   }
-
-  Future<List<Order>> _getShipmentOrders(String shipmentId) async {
-    try {
-      final result = await ref.read(ordersShipmentsNotifierProvider.notifier).getOrders(
-        page: 1,
-        queryParams: OrderFilter(shipmentId: shipmentId).toJson(),
-      );
-      return result.data ?? [];
-    } catch (e) {
-      return [];
-    }
-  }
-
   Future<void> _sendSelectedOrders() async {
     final selectedOrderIds = ref.read(multiSelectNotifierProvider);
 
@@ -596,11 +481,9 @@ class _OrdersShipmentsTabBarScreenState extends ConsumerState<OrdersShipmentsTab
       GlobalToast.show(message: 'يرجى اختيار طلبات للإرسال');
       return;
     }
-
     setState(() {
       _isLoading = true;
     });
-
     try {
       final result = await ref
           .read(ordersShipmentsNotifierProvider.notifier)
@@ -611,9 +494,6 @@ class _OrdersShipmentsTabBarScreenState extends ConsumerState<OrdersShipmentsTab
         ref.read(multiSelectNotifierProvider.notifier).clearSelection();
         ref.read(multiSelectModeNotifierProvider.notifier).disable();
 
-        // تحديث البيانات
-        _dataLoaded = false;
-        _loadInitialData();
       } else {
         GlobalToast.show(
           message: result.$2 ?? 'فشل في إرسال الطلبات',
@@ -677,7 +557,6 @@ class _OrdersShipmentsTabBarScreenState extends ConsumerState<OrdersShipmentsTab
       ),
     );
   }
-
   Widget _buildNoShipmentsFound() {
     return Center(
       child: Column(
@@ -701,5 +580,141 @@ class _OrdersShipmentsTabBarScreenState extends ConsumerState<OrdersShipmentsTab
         ],
       ),
     );
+  }
+}
+
+// Widget منفصل لعرض طلبات الشحنة
+class _ShipmentOrdersModal extends StatelessWidget {
+  final Shipment shipment;
+  final WidgetRef ref;
+
+  const _ShipmentOrdersModal({
+    required this.shipment,
+    required this.ref,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black54,
+      body: Center(
+        child: Container(
+          height: MediaQuery.of(context).size.height * 0.8,
+          margin: const EdgeInsets.all(20),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.all(Radius.circular(24)),
+          ),
+          child: Column(
+            children: [
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 12),
+                width: 50,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              
+                Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: Icon(
+                        Icons.close,
+                        color: Theme.of(context).colorScheme.secondary,
+                      ),
+                    ),
+                    const Gap(AppSpaces.medium),
+                    Expanded(
+                      child: Text(
+                        'طلبات الشحنة ${shipment.code ?? ""}',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          fontFamily: "Tajawal",
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              const Divider(height: 1),
+              
+              // Orders list
+              Expanded(
+                child: FutureBuilder<List<Order>>(
+                  future: _getShipmentOrders(shipment.id ?? ''),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    
+                    if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SvgPicture.asset(
+                              'assets/svg/box.svg',
+                              width: 64,
+                              height: 64,
+                              color: Theme.of(context).colorScheme.secondary,
+                            ),
+                            const Gap(AppSpaces.medium),
+                            const Text(
+                              'لا توجد طلبات في هذه الشحنة',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontFamily: "Tajawal",
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    } 
+                    return ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: snapshot.data!.length,
+                      itemBuilder: (context, index) {
+                        return EnhancedSelectableOrderCard(
+                          order: snapshot.data![index],
+                          isSelectionMode: false,
+                          onTap: () {
+                            Navigator.pop(context);
+                            context.push(
+                              AppRoutes.orderDetails,
+                              extra: snapshot.data![index].code,
+                            );
+                          },
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+// 
+  Future<List<Order>> _getShipmentOrders(String shipmentId) async {
+    try {
+      final result = await ref.read(ordersShipmentsNotifierProvider.notifier).getOrders(
+        page: 1,
+        queryParams: OrderFilter(shipmentId: shipmentId).toJson(),
+        forceRefresh: true,
+      );
+      return result.data ?? [];
+    } catch (e) {
+      print('❌ خطأ في جلب طلبات الشحنة: $e');
+      return [];
+    }
   }
 }

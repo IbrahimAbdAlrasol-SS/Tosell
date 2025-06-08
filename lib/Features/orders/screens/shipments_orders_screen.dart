@@ -36,7 +36,6 @@ class _OrdersShipmentsTabBarScreenState extends ConsumerState<OrdersShipmentsTab
   late TabController _tabController;
   bool _isLoading = false;
   
-  // Cache للبيانات
   List<Order>? _cachedOrders;
   List<Shipment>? _cachedShipments;
   bool _dataLoaded = false;
@@ -46,7 +45,6 @@ class _OrdersShipmentsTabBarScreenState extends ConsumerState<OrdersShipmentsTab
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     
-    // تحميل البيانات مرة واحدة عند بدء الشاشة
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadInitialData();
     });
@@ -56,7 +54,6 @@ class _OrdersShipmentsTabBarScreenState extends ConsumerState<OrdersShipmentsTab
     if (_dataLoaded) return;
     
     try {
-      // استدعاء منفصل لتجنب مشاكل التحويل
       final ordersResult = await ref.read(ordersShipmentsNotifierProvider.notifier).getOrders(
         page: 1,
         queryParams: widget.filter?.toJson(),
@@ -143,7 +140,6 @@ class _OrdersShipmentsTabBarScreenState extends ConsumerState<OrdersShipmentsTab
           
           const Gap(AppSpaces.small),
 
-          // زر Multi-Select (فقط للطلبات)
           if (_tabController.index == 0) ...[
             GestureDetector(
               onTap: () {
@@ -178,7 +174,6 @@ class _OrdersShipmentsTabBarScreenState extends ConsumerState<OrdersShipmentsTab
             const Gap(AppSpaces.small),
           ],
 
-          // زر الفلتر
           GestureDetector(
             onTap: () {
               showModalBottomSheet(
@@ -279,7 +274,6 @@ class _OrdersShipmentsTabBarScreenState extends ConsumerState<OrdersShipmentsTab
 
     return Column(
       children: [
-        // شريط حالة الاختيار
         if (isSelectionMode) ...[
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -337,12 +331,10 @@ class _OrdersShipmentsTabBarScreenState extends ConsumerState<OrdersShipmentsTab
           ),
           const Gap(AppSpaces.small),
         ],
-
-        // عنوان الطلبات (يمين الشاشة)
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
               Text(
                 widget.filter == null
@@ -359,13 +351,9 @@ class _OrdersShipmentsTabBarScreenState extends ConsumerState<OrdersShipmentsTab
         ),
 
         const Gap(AppSpaces.small),
-
-        // قائمة الطلبات
         Expanded(
           child: _buildOrdersList(isSelectionMode),
         ),
-
-        // زر إرسال الطلبات المختارة
         if (isSelectionMode && selectedOrderIds.isNotEmpty)
           Container(
             padding: const EdgeInsets.all(16),
@@ -383,16 +371,14 @@ class _OrdersShipmentsTabBarScreenState extends ConsumerState<OrdersShipmentsTab
       ],
     );
   }
-
   Widget _buildShipmentsTab() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // عنوان الشحنات (يمين الشاشة)
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 16),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
               Text(
                 'جميع الوصولات',
@@ -477,7 +463,6 @@ class _OrdersShipmentsTabBarScreenState extends ConsumerState<OrdersShipmentsTab
         ),
         child: Column(
           children: [
-            // Handle indicator
             Container(
               margin: const EdgeInsets.symmetric(vertical: 12),
               width: 50,
@@ -487,9 +472,7 @@ class _OrdersShipmentsTabBarScreenState extends ConsumerState<OrdersShipmentsTab
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            
-            // Header
-            Padding(
+                        Padding(
               padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
@@ -517,7 +500,6 @@ class _OrdersShipmentsTabBarScreenState extends ConsumerState<OrdersShipmentsTab
             
             const Divider(height: 1),
             
-            // Orders list
             Expanded(
               child: FutureBuilder<List<Order>>(
                 future: _getShipmentOrders(shipment.id ?? ''),
@@ -610,7 +592,6 @@ class _OrdersShipmentsTabBarScreenState extends ConsumerState<OrdersShipmentsTab
         ref.read(multiSelectNotifierProvider.notifier).clearSelection();
         ref.read(multiSelectModeNotifierProvider.notifier).disable();
 
-        // تحديث البيانات
         _dataLoaded = false;
         _loadInitialData();
       } else {

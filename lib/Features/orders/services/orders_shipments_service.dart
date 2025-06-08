@@ -49,10 +49,14 @@ class OrdersShipmentsService {
         "orders": orderIds.map((orderId) => {"orderId": orderId}).toList(),
       };
       
+      print('🚀 إرسال البيانات للخادم: $requestData'); // للتتبع
+      
       var result = await _shipmentClient.create(
         endpoint: '/shipment/pick-up', 
         data: requestData
       );
+
+      print('📦 استجابة الخادم: ${result.code} - ${result.message}'); // للتتبع
 
       if (result.code == 200 || result.code == 201) {
         return (result.singleData, null);
@@ -60,6 +64,7 @@ class OrdersShipmentsService {
         return (null, result.message ?? 'فشل في إنشاء الشحنة');
       }
     } catch (e) {
+      print('❌ خطأ في إنشاء الشحنة: $e'); // للتتبع
       return (null, e.toString());
     }
   }

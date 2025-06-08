@@ -11,18 +11,30 @@ part 'orders_shipments_provider.g.dart';
 class OrdersShipmentsNotifier extends _$OrdersShipmentsNotifier {
   final OrdersShipmentsService _service = OrdersShipmentsService();
   
+  // Cache للبيانات
+  List<Order>? _cachedOrders;
+  List<Shipment>? _cachedShipments;
+  
   // للطلبات
   Future<ApiResponse<Order>> getOrders({
     int page = 1, 
-    Map<String, dynamic>? queryParams
+    Map<String, dynamic>? queryParams,
+    bool forceRefresh = false
   }) async {
+    if (forceRefresh) {
+      _cachedOrders = null;
+    }
     return await _service.getOrders(queryParams: queryParams, page: page);
   }
 
   Future<ApiResponse<Shipment>> getShipments({
     int page = 1, 
-    Map<String, dynamic>? queryParams
+    Map<String, dynamic>? queryParams,
+    bool forceRefresh = false
   }) async {
+    if (forceRefresh) {
+      _cachedShipments = null;
+    }
     return await _service.getShipments(queryParams: queryParams, page: page);
   }
 
@@ -33,7 +45,11 @@ class OrdersShipmentsNotifier extends _$OrdersShipmentsNotifier {
       var result = await _service.createShipment(orderIds);
       
       if (result.$1 != null) {
-        state = const AsyncValue.data([]); // success state
+        // مسح Cache بعد إنشاء شحنة جديدة
+        _cachedOrders = null;
+        _cachedShipments = null;
+        
+        state = const AsyncValue.data([]);
         return (result.$1, null);
       } else {
         state = AsyncError(result.$2 ?? 'حدث خطأ', StackTrace.current);
@@ -49,12 +65,25 @@ class OrdersShipmentsNotifier extends _$OrdersShipmentsNotifier {
     return await _service.getOrderByCode(code: code);
   }
 
+  //  لتحديث البيانات المحفوظة
+  void updateCachedOrders(List<Order> orders) {
+    _cachedOrders = orders;
+  }
+
+  void updateCachedShipments(List<Shipment> shipments) {
+    _cachedShipments = shipments;
+  }
+
+  List<Order>? get cachedOrders => _cachedOrders;
+  List<Shipment>? get cachedShipments => _cachedShipments;
+
+
   @override
   FutureOr<List<dynamic>> build() async {
     return [];
   }
 }
-
+//
 @riverpod
 class MultiSelectNotifier extends _$MultiSelectNotifier {
   void toggleSelection(String orderId) {
