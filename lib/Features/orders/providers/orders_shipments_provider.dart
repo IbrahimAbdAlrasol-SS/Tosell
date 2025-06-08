@@ -83,7 +83,7 @@ class OrdersShipmentsNotifier extends _$OrdersShipmentsNotifier {
     return [];
   }
 }
-//
+
 @riverpod
 class MultiSelectNotifier extends _$MultiSelectNotifier {
   void toggleSelection(String orderId) {
