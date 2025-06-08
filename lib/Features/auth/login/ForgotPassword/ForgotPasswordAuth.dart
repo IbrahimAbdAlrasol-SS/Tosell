@@ -1,4 +1,3 @@
-import 'package:Tosell/Features/auth/register/screens/user_info_tab.dart';
 import 'package:Tosell/Features/auth/register/widgets/build_background.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

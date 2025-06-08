@@ -4,7 +4,6 @@ import 'package:Tosell/Features/order/models/Location.dart';
 import 'package:Tosell/Features/orders/services/orders_shipments_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:Tosell/Features/order/models/add_order_form.dart';
-import 'package:Tosell/Features/orders/services/orders_service.dart';
 
 part 'order_commands_provider.g.dart';
 
@@ -47,14 +46,14 @@ class OrderCommandsNotifier extends _$OrderCommandsNotifier {
 
 final getOrderByCodeProvider =
     FutureProvider.family<Order?, String>((ref, code) async {
-  final service = OrdersService(); // or inject via ref if needed
+  final service = OrdersShipmentsService(); // or inject via ref if needed
   return service.getOrderByCode(code: code);
 });
 
 final changeOrderStateProvider =
     FutureProvider.family<Order?, String>((ref, code) async {
   try {
-    final service = OrdersService(); // or inject via ref if needed
+    final service = OrdersShipmentsService(); // or inject via ref if needed
     return service.getOrderByCode(code: code);
   } catch (e) {
     return (null);

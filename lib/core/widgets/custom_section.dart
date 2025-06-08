@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:Tosell/core/utils/extensions.dart';
 
 class CustomSection extends StatefulWidget {
   final List<Widget>? children;
