@@ -11,7 +11,6 @@ import 'package:Tosell/Features/orders/models/Order.dart';
 import 'package:Tosell/Features/orders/models/Shipment.dart';
 import 'package:Tosell/Features/orders/models/order_enum.dart';
 import 'package:Tosell/Features/orders/models/OrderFilter.dart';
-import 'package:Tosell/Features/orders/widgets/order_card_item.dart';
 import 'package:Tosell/Features/orders/providers/orders_shipments_provider.dart';
 import 'package:Tosell/core/widgets/CustomAppBar.dart';
 import 'package:Tosell/core/widgets/custom_section.dart';

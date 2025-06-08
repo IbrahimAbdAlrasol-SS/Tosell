@@ -1,4 +1,3 @@
-
 import 'package:Tosell/Features/orders/widgets/ShipmentCard.dart';
 import 'package:Tosell/Features/orders/widgets/selectable_order_card.dart';
 import 'package:gap/gap.dart';
@@ -12,15 +11,12 @@ import 'package:Tosell/core/widgets/FillButton.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:Tosell/Features/orders/models/Order.dart';
 import 'package:Tosell/Features/orders/models/Shipment.dart';
-import 'package:Tosell/paging/generic_paged_list_view.dart';
 import 'package:Tosell/core/widgets/CustomTextFormField.dart';
 import 'package:Tosell/Features/orders/models/order_enum.dart';
 import 'package:Tosell/Features/orders/models/OrderFilter.dart';
-
 import 'package:Tosell/Features/orders/providers/orders_shipments_provider.dart';
 import 'package:Tosell/Features/orders/screens/orders_filter_bottom_sheet.dart';
 import 'package:Tosell/core/utils/GlobalToast.dart';
-
 
 class OrdersShipmentsTabBarScreen extends ConsumerStatefulWidget {
   final OrderFilter? filter;
@@ -53,26 +49,31 @@ class _OrdersShipmentsTabBarScreenState extends ConsumerState<OrdersShipmentsTab
   }
 
   Future<void> _loadInitialData() async {
-    if (_dataLoaded) return;
+  if (_dataLoaded) return;
+  
+  try {
+    // تحميل الطلبات
+    final ordersResult = await ref.read(ordersShipmentsNotifierProvider.notifier).getOrders(
+      page: 1,
+      queryParams: widget.filter?.toJson(),
+    );
     
-    try {
-      // استدعاء منفصل لتجنب مشاكل التحويل
-      final ordersResult = await ref.read(ordersShipmentsNotifierProvider.notifier).getOrders(
-        page: 1,
-        queryParams: widget.filter?.toJson(),
-      );
-      
-      final shipmentsResult = await ref.read(ordersShipmentsNotifierProvider.notifier).getShipments(page: 1);
+    // تحميل الشحنات  
+    final shipmentsResult = await ref.read(ordersShipmentsNotifierProvider.notifier).getShipments(page: 1);
 
+    if (mounted) {
       setState(() {
         _cachedOrders = ordersResult.data ?? [];
         _cachedShipments = shipmentsResult.data ?? [];
         _dataLoaded = true;
       });
-    } catch (e) {
+    }
+  } catch (e) {
+    if (mounted) {
       GlobalToast.show(message: 'حدث خطأ في تحميل البيانات');
     }
   }
+}
 
   @override
   void dispose() {
@@ -625,9 +626,11 @@ class _OrdersShipmentsTabBarScreenState extends ConsumerState<OrdersShipmentsTab
         backgroundColor: Colors.red,
       );
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 

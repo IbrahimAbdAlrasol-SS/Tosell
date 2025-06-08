@@ -91,7 +91,7 @@ class EnhancedSelectableOrderCard extends ConsumerWidget {
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: isSelected
-                                ? Icon(
+                                ? const Icon(
                                     Icons.check,
                                     color: Colors.white,
                                     size: 16,

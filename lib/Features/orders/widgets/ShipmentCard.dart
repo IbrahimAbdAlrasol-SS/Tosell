@@ -105,7 +105,7 @@ class EnhancedShipmentCard extends ConsumerWidget {
                     children: [
                       _buildShipmentInfoSection(
                         "وصولات/${shipment.ordersCount ?? 0}",
-                        "assets/svg/Files.svg", // تغيير المسار لتجنب الخطأ
+                        "assets/svg/User.svg", // استخدام أيقونة متوفرة
                         theme,
                       ),
                       VerticalDivider(
@@ -163,7 +163,7 @@ class EnhancedShipmentCard extends ConsumerWidget {
             Expanded(
               child: Text(
                 title,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w400,
                   color: Colors.black, // النص أسود كما هو مطلوب
